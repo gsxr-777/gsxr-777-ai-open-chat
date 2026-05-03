@@ -29,8 +29,19 @@ define('GSXR_777_PLUGIN_BASENAME', plugin_basename(__FILE__));
 // Load translations
 add_action('plugins_loaded', 'gsxr_777_load_textdomain');
 function gsxr_777_load_textdomain() {
-    // Path should be relative to plugins directory: 'gsxr-777-ai-open-chat/languages'
-    load_plugin_textdomain('gsxr-777', false, dirname(GSXR_777_PLUGIN_BASENAME) . '/languages');
+    $domain = 'gsxr-777';
+    $languages_rel_path = dirname(GSXR_777_PLUGIN_BASENAME) . '/languages';
+
+    // Register plugin languages path for regular WP translation loading.
+    load_plugin_textdomain($domain, false, $languages_rel_path);
+
+    // Force-load bundled MO as a fallback/merge source, so recently added strings
+    // (for example UI descriptions) are available even with stale global language packs.
+    $locale = function_exists('determine_locale') ? determine_locale() : get_locale();
+    $mofile = GSXR_777_PLUGIN_DIR . 'languages/' . $domain . '-' . $locale . '.mo';
+    if (file_exists($mofile)) {
+        load_textdomain($domain, $mofile);
+    }
 }
 
 // Load the main plugin class

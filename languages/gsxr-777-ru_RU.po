@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: GSXR-777 AI Open Chat 1.0.0\n"
 "Report-Msgid-Bugs-To: https://github.com/gmen1057/gsxr-777-ai-open-chat\n"
 "POT-Creation-Date: 2024-01-01 12:00+0000\n"
-"PO-Revision-Date: 2024-01-01 12:00+0000\n"
+"PO-Revision-Date: 2026-05-03 23:00+0300\n"
 "Last-Translator: GSXR-777 Team\n"
 "Language-Team: Russian\n"
 "Language: ru_RU\n"
@@ -12,6 +12,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"X-Generator: Poedit 2.0.7\n"
 
 msgid "GSXR-777 AI Open Chat requires PHP 7.4 or higher."
 msgstr "GSXR-777 AI Open Chat требует PHP 7.4 или выше."
@@ -285,6 +286,7 @@ msgstr "Выберите вашего провайдера AI"
 
 msgid "API Documentation"
 msgstr "Документация API"
+
 msgid "Additional System Instructions"
 msgstr "Дополнительные системные инструкции"
 
@@ -342,8 +344,8 @@ msgstr "Эмпатичный"
 msgid "Encourages introducing new topics (-2.0 to 2.0)."
 msgstr "Поощряет добавление новых тем (-2.0 до 2.0)."
 
-msgid "Example: \\"Segoe UI\\", Roboto, Arial, sans-serif"
-msgstr "Пример: \\"Segoe UI\\", Roboto, Arial, sans-serif"
+msgid "Example: \\\"Segoe UI\\\", Roboto, Arial, sans-serif"
+msgstr "Пример: \\\"Segoe UI\\\", Roboto, Arial, sans-serif"
 
 msgid "Expert"
 msgstr "Экспертный"
@@ -494,4 +496,3 @@ msgstr "Основные"
 
 msgid "Внешний вид"
 msgstr "Внешний вид"
-
