@@ -285,3 +285,213 @@ msgstr "Выберите вашего провайдера AI"
 
 msgid "API Documentation"
 msgstr "Документация API"
+msgid "Additional System Instructions"
+msgstr "Дополнительные системные инструкции"
+
+msgid "Additional system instructions:"
+msgstr "Дополнительные системные инструкции:"
+
+msgid "An error occurred. Please check the logs."
+msgstr "Произошла ошибка. Проверьте журналы."
+
+msgid "API request failed (%1$d %2$s)"
+msgstr "Запрос к API не выполнен (%1$d %2$s)"
+
+msgid "API request failed (HTTP %d)"
+msgstr "Запрос к API не выполнен (HTTP %d)"
+
+msgid "Assistant Message Background"
+msgstr "Фон сообщения ассистента"
+
+msgid "Assistant Message Text"
+msgstr "Текст сообщения ассистента"
+
+msgid "Assistant Personality"
+msgstr "Характер ассистента"
+
+msgid "Assistant personality:"
+msgstr "Характер ассистента:"
+
+msgid "Be practical and action-oriented. Focus on clear steps and outcomes."
+msgstr "Будьте практичны и ориентированы на результат. Давайте четкие шаги и действия."
+
+msgid "Be warm, polite, and supportive. Keep the tone approachable."
+msgstr "Будьте дружелюбны, вежливы и поддерживающи. Сохраняйте простой и доброжелательный тон."
+
+msgid "Chat Font Family"
+msgstr "Семейство шрифта чата"
+
+msgid "Chat Window Background"
+msgstr "Фон окна чата"
+
+msgid "Concise"
+msgstr "Краткий"
+
+msgid "Conversation Context Size"
+msgstr "Размер контекста диалога"
+
+msgid "Current key is saved."
+msgstr "Текущий ключ сохранен."
+
+msgid "Defines the tone of model responses (friendly, sarcastic, pragmatic, funny, etc.)."
+msgstr "Определяет стиль ответов модели (дружелюбный, саркастичный, прагматичный, веселый и т.д.)."
+
+msgid "Empathetic"
+msgstr "Эмпатичный"
+
+msgid "Encourages introducing new topics (-2.0 to 2.0)."
+msgstr "Поощряет добавление новых тем (-2.0 до 2.0)."
+
+msgid "Example: \\"Segoe UI\\", Roboto, Arial, sans-serif"
+msgstr "Пример: \\"Segoe UI\\", Roboto, Arial, sans-serif"
+
+msgid "Expert"
+msgstr "Экспертный"
+
+msgid "Extra rules for the assistant behavior. Applies to every request."
+msgstr "Дополнительные правила поведения ассистента. Применяются к каждому запросу."
+
+msgid "File not found"
+msgstr "Файл не найден"
+
+msgid "Filename is required"
+msgstr "Требуется имя файла"
+
+msgid "Formal"
+msgstr "Формальный"
+
+msgid "Frequency Penalty"
+msgstr "Штраф за повторения"
+
+msgid "Friendly"
+msgstr "Дружелюбный"
+
+msgid "Funny"
+msgstr "Веселый"
+
+msgid "Gradient Angle"
+msgstr "Угол градиента"
+
+msgid "GSXR-777 AI Open Chat requires PHP 7.4.0 or higher."
+msgstr "GSXR-777 AI Open Chat требует PHP 7.4.0 или выше."
+
+msgid "GSXR-777 AI Open Chat requires WordPress 5.0.0 or higher."
+msgstr "GSXR-777 AI Open Chat требует WordPress 5.0.0 или выше."
+
+msgid "Hello"
+msgstr "Привет"
+
+msgid "How many previous messages are sent to the model as context."
+msgstr "Сколько предыдущих сообщений отправлять модели как контекст."
+
+msgid "Input Background"
+msgstr "Фон поля ввода"
+
+msgid "Input Text Color"
+msgstr "Цвет текста поля ввода"
+
+msgid "Invalid filename"
+msgstr "Недопустимое имя файла"
+
+msgid "Invalid filename format"
+msgstr "Недопустимый формат имени файла"
+
+msgid "Invalid widget dimensions. Width must be 300-800px and height 400-900px."
+msgstr "Недопустимые размеры виджета. Ширина должна быть 300-800px, высота 400-900px."
+
+msgid "Keep responses short, direct, and to the point."
+msgstr "Давайте короткие, прямые и по делу ответы."
+
+msgid "Main accent color for buttons, links and focus states."
+msgstr "Основной акцентный цвет для кнопок, ссылок и состояний фокуса."
+
+msgid "Messages Area Background"
+msgstr "Фон области сообщений"
+
+msgid "Missing required fields"
+msgstr "Отсутствуют обязательные поля"
+
+msgid "Nucleus sampling threshold (0.0-1.0). Lower values make output more focused."
+msgstr "Порог nucleus sampling (0.0-1.0). Меньшие значения делают ответы более сфокусированными."
+
+msgid "Optional for most providers. Required for Yandex Responses API as OpenAI-Project header value (example: b1gad9eo3bbmgfl7od3h)."
+msgstr "Необязательно для большинства провайдеров. Для Yandex Responses API обязательно как значение заголовка OpenAI-Project (пример: b1gad9eo3bbmgfl7od3h)."
+
+msgid "Pragmatic"
+msgstr "Прагматичный"
+
+msgid "Presence Penalty"
+msgstr "Штраф за новизну"
+
+msgid "Project / Folder ID"
+msgstr "ID проекта / папки"
+
+msgid "Reduces repetitive words or phrases (-2.0 to 2.0)."
+msgstr "Снижает повторяемость слов и фраз (-2.0 до 2.0)."
+
+msgid "Respond as a domain expert with concise technical precision."
+msgstr "Отвечайте как профильный эксперт с краткой технической точностью."
+
+msgid "Response generation timeout. Please try again."
+msgstr "Время генерации ответа истекло. Попробуйте еще раз."
+
+msgid "Response incomplete"
+msgstr "Ответ неполный"
+
+msgid "Response incomplete: %s"
+msgstr "Ответ неполный: %s"
+
+msgid "Response is still being generated. Please try again in a few seconds."
+msgstr "Ответ все еще генерируется. Попробуйте снова через несколько секунд."
+
+msgid "Sarcastic"
+msgstr "Саркастичный"
+
+msgid "Secondary Gradient Color"
+msgstr "Второй цвет градиента"
+
+msgid "Show empathy, acknowledge user context, and respond with care."
+msgstr "Проявляйте эмпатию, учитывайте контекст пользователя и отвечайте бережно."
+
+msgid "Title is too long. Maximum 100 characters, current: %d"
+msgstr "Заголовок слишком длинный. Максимум 100 символов, сейчас: %d"
+
+msgid "Top P"
+msgstr "Top P"
+
+msgid "Use a playful and humorous tone while keeping answers accurate."
+msgstr "Используйте игривый и юмористический тон, сохраняя точность ответов."
+
+msgid "Use formal, professional language and structured responses."
+msgstr "Используйте формальный профессиональный язык и структурированные ответы."
+
+msgid "Use light sarcasm carefully, without insulting the user. Keep answers useful."
+msgstr "Используйте легкий сарказм аккуратно, не оскорбляя пользователя. Ответы должны быть полезными."
+
+msgid "Used for header/button/message gradients."
+msgstr "Используется для градиентов заголовка, кнопок и сообщений."
+
+msgid "Used in chat messages and input area."
+msgstr "Используется в сообщениях чата и поле ввода."
+
+msgid "User Message Text"
+msgstr "Текст сообщения пользователя"
+
+msgid "Welcome message is too long. Maximum 500 characters, current: %d"
+msgstr "Приветственное сообщение слишком длинное. Максимум 500 символов, сейчас: %d"
+
+msgid "Widget Font Family"
+msgstr "Семейство шрифта виджета"
+
+msgid "Yandex Project ID is required (OpenAI-Project header)"
+msgstr "Требуется Yandex Project ID (заголовок OpenAI-Project)"
+
+msgid "Your API key (stored encrypted). Leave blank to keep current key."
+msgstr "Ваш API ключ (хранится в зашифрованном виде). Оставьте поле пустым, чтобы сохранить текущий ключ."
+
+msgid "Основные"
+msgstr "Основные"
+
+msgid "Внешний вид"
+msgstr "Внешний вид"
+

@@ -15,6 +15,7 @@ class GSXR_777_Core {
     private $knowledge;
     private $security;
     private $stats;
+    private const VERSION_OPTION = 'gsxr_777_plugin_version';
 
     public function __construct() {
         $this->load_dependencies();
@@ -22,6 +23,7 @@ class GSXR_777_Core {
     }
 
     public function run() {
+        self::maybe_upgrade();
         $this->define_admin_hooks();
         $this->define_public_hooks();
         // Register Polylang strings after init (when Polylang is fully loaded)
@@ -112,14 +114,7 @@ class GSXR_777_Core {
             wp_die(__('GSXR-777 AI Open Chat requires WordPress 5.0.0 or higher.', 'gsxr-777'));
         }
 
-        // Create database tables
-        self::create_tables();
-        
-        // Create knowledge directory
-        self::create_knowledge_directory();
-        
-        // Set default options
-        self::set_default_options();
+        self::maybe_upgrade(true);
     }
 
     public static function deactivate() {
@@ -133,6 +128,28 @@ class GSXR_777_Core {
             self::delete_options();
             self::delete_knowledge_directory();
         }
+    }
+
+    private static function maybe_upgrade($force = false) {
+        $installed_version = get_option(self::VERSION_OPTION, false);
+
+        if (!$force && !self::needs_upgrade($installed_version)) {
+            return;
+        }
+
+        // Keep schema and defaults in sync during silent plugin updates.
+        self::create_tables();
+        self::create_knowledge_directory();
+        self::set_default_options();
+        update_option(self::VERSION_OPTION, GSXR_777_VERSION);
+    }
+
+    private static function needs_upgrade($installed_version) {
+        if ($installed_version === false || $installed_version === '') {
+            return true;
+        }
+
+        return version_compare((string) $installed_version, GSXR_777_VERSION, '<');
     }
 
     private static function create_tables() {
@@ -322,7 +339,8 @@ class GSXR_777_Core {
             'gsxr_777_widget_height',
             'gsxr_777_rate_limit_requests',
             'gsxr_777_rate_limit_window',
-            'gsxr_777_delete_data_on_uninstall'
+            'gsxr_777_delete_data_on_uninstall',
+            self::VERSION_OPTION
         );
 
         foreach ($options as $option) {
