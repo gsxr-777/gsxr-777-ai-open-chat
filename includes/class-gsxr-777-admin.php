@@ -83,6 +83,24 @@ class GSXR_777_Admin {
         register_setting('gsxr_777_api_settings', 'gsxr_777_api_max_tokens', array(
             'sanitize_callback' => 'absint'
         ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_personality', array(
+            'sanitize_callback' => array($this, 'sanitize_personality')
+        ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_top_p', array(
+            'sanitize_callback' => array($this, 'sanitize_top_p')
+        ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_frequency_penalty', array(
+            'sanitize_callback' => array($this, 'sanitize_penalty')
+        ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_presence_penalty', array(
+            'sanitize_callback' => array($this, 'sanitize_penalty')
+        ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_history_limit', array(
+            'sanitize_callback' => array($this, 'sanitize_history_limit')
+        ));
+        register_setting('gsxr_777_api_settings', 'gsxr_777_api_system_instructions', array(
+            'sanitize_callback' => 'sanitize_textarea_field'
+        ));
 
         // Widget Settings
         register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_title', array(
@@ -99,6 +117,39 @@ class GSXR_777_Admin {
         ));
         register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_primary_color', array(
             'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_secondary_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_gradient_angle', array(
+            'sanitize_callback' => array($this, 'sanitize_gradient_angle')
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_chat_background_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_messages_background_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_assistant_background_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_assistant_text_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_user_text_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_input_background_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_input_text_color', array(
+            'sanitize_callback' => 'sanitize_hex_color'
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_font_family', array(
+            'sanitize_callback' => array($this, 'sanitize_font_family')
+        ));
+        register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_chat_font_family', array(
+            'sanitize_callback' => array($this, 'sanitize_font_family')
         ));
         register_setting('gsxr_777_widget_settings', 'gsxr_777_widget_width', array(
             'sanitize_callback' => array($this, 'sanitize_widget_size')
@@ -135,6 +186,12 @@ class GSXR_777_Admin {
             update_option('gsxr_777_api_project_id', sanitize_text_field($_POST['gsxr_777_api_project_id'] ?? ''));
             update_option('gsxr_777_api_temperature', $this->sanitize_temperature($_POST['gsxr_777_api_temperature']));
             update_option('gsxr_777_api_max_tokens', absint($_POST['gsxr_777_api_max_tokens']));
+            update_option('gsxr_777_api_personality', $this->sanitize_personality($_POST['gsxr_777_api_personality'] ?? 'friendly'));
+            update_option('gsxr_777_api_top_p', $this->sanitize_top_p($_POST['gsxr_777_api_top_p'] ?? 1));
+            update_option('gsxr_777_api_frequency_penalty', $this->sanitize_penalty($_POST['gsxr_777_api_frequency_penalty'] ?? 0));
+            update_option('gsxr_777_api_presence_penalty', $this->sanitize_penalty($_POST['gsxr_777_api_presence_penalty'] ?? 0));
+            update_option('gsxr_777_api_history_limit', $this->sanitize_history_limit($_POST['gsxr_777_api_history_limit'] ?? 20));
+            update_option('gsxr_777_api_system_instructions', sanitize_textarea_field($_POST['gsxr_777_api_system_instructions'] ?? ''));
             
             echo '<div class="notice notice-success"><p>' . __('Settings saved successfully!', 'gsxr-777') . '</p></div>';
         }
@@ -147,6 +204,23 @@ class GSXR_777_Admin {
         $api_project_id = get_option('gsxr_777_api_project_id', '');
         $api_temperature = get_option('gsxr_777_api_temperature', 0.7);
         $api_max_tokens = get_option('gsxr_777_api_max_tokens', 1000);
+        $api_personality = get_option('gsxr_777_api_personality', 'friendly');
+        $api_top_p = get_option('gsxr_777_api_top_p', 1);
+        $api_frequency_penalty = get_option('gsxr_777_api_frequency_penalty', 0);
+        $api_presence_penalty = get_option('gsxr_777_api_presence_penalty', 0);
+        $api_history_limit = get_option('gsxr_777_api_history_limit', 20);
+        $api_system_instructions = get_option('gsxr_777_api_system_instructions', '');
+
+        $personality_options = array(
+            'friendly' => __('Friendly', 'gsxr-777'),
+            'sarcastic' => __('Sarcastic', 'gsxr-777'),
+            'pragmatic' => __('Pragmatic', 'gsxr-777'),
+            'funny' => __('Funny', 'gsxr-777'),
+            'formal' => __('Formal', 'gsxr-777'),
+            'empathetic' => __('Empathetic', 'gsxr-777'),
+            'expert' => __('Expert', 'gsxr-777'),
+            'concise' => __('Concise', 'gsxr-777')
+        );
 
         $providers = array(
             'OpenAI' => array(
@@ -181,9 +255,6 @@ class GSXR_777_Admin {
             )
         );
 
-        // For backward compatibility
-        $provider_urls = array_map(function($p) { return $p['url']; }, $providers);
-        
         ?>
         <div class="wrap">
             <h1><?php _e('API Settings', 'gsxr-777'); ?></h1>
@@ -279,6 +350,68 @@ class GSXR_777_Admin {
                                    value="<?php echo esc_attr($api_max_tokens); ?>" 
                                    min="1" max="4000" class="small-text" />
                             <p class="description"><?php _e('Maximum tokens in response', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Assistant Personality', 'gsxr-777'); ?></th>
+                        <td>
+                            <select name="gsxr_777_api_personality">
+                                <?php foreach ($personality_options as $value => $label): ?>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($api_personality, $value); ?>>
+                                        <?php echo esc_html($label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description"><?php _e('Defines the tone of model responses (friendly, sarcastic, pragmatic, funny, etc.).', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Top P', 'gsxr-777'); ?></th>
+                        <td>
+                            <input type="number" name="gsxr_777_api_top_p"
+                                   value="<?php echo esc_attr($api_top_p); ?>"
+                                   min="0" max="1" step="0.05" class="small-text" />
+                            <p class="description"><?php _e('Nucleus sampling threshold (0.0-1.0). Lower values make output more focused.', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Frequency Penalty', 'gsxr-777'); ?></th>
+                        <td>
+                            <input type="number" name="gsxr_777_api_frequency_penalty"
+                                   value="<?php echo esc_attr($api_frequency_penalty); ?>"
+                                   min="-2" max="2" step="0.1" class="small-text" />
+                            <p class="description"><?php _e('Reduces repetitive words or phrases (-2.0 to 2.0).', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Presence Penalty', 'gsxr-777'); ?></th>
+                        <td>
+                            <input type="number" name="gsxr_777_api_presence_penalty"
+                                   value="<?php echo esc_attr($api_presence_penalty); ?>"
+                                   min="-2" max="2" step="0.1" class="small-text" />
+                            <p class="description"><?php _e('Encourages introducing new topics (-2.0 to 2.0).', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Conversation Context Size', 'gsxr-777'); ?></th>
+                        <td>
+                            <input type="number" name="gsxr_777_api_history_limit"
+                                   value="<?php echo esc_attr($api_history_limit); ?>"
+                                   min="1" max="100" class="small-text" />
+                            <p class="description"><?php _e('How many previous messages are sent to the model as context.', 'gsxr-777'); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><?php _e('Additional System Instructions', 'gsxr-777'); ?></th>
+                        <td>
+                            <textarea name="gsxr_777_api_system_instructions" rows="4" class="large-text"><?php echo esc_textarea($api_system_instructions); ?></textarea>
+                            <p class="description"><?php _e('Extra rules for the assistant behavior. Applies to every request.', 'gsxr-777'); ?></p>
                         </td>
                     </tr>
                 </table>
@@ -504,46 +637,72 @@ class GSXR_777_Admin {
     }
 
     public function render_widget_settings_page() {
+        $allowed_tabs = array('general', 'appearance');
+        $active_tab = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'general';
+        if (!in_array($active_tab, $allowed_tabs, true)) {
+            $active_tab = 'general';
+        }
+
         if (isset($_POST['submit'])) {
             check_admin_referer('gsxr_777_widget_settings');
-            
-            // Validate welcome message length (max 500 chars)
-            $welcome = $_POST['gsxr_777_widget_welcome'] ?? '';
-            if (strlen($welcome) > 500) {
-                echo '<div class="notice notice-error"><p>' . 
-                     sprintf(__('Welcome message is too long. Maximum 500 characters, current: %d', 'gsxr-777'), strlen($welcome)) . 
-                     '</p></div>';
-                return;
+
+            $settings_section = isset($_POST['gsxr_777_widget_settings_section']) ? sanitize_key($_POST['gsxr_777_widget_settings_section']) : 'general';
+            if (!in_array($settings_section, $allowed_tabs, true)) {
+                $settings_section = 'general';
             }
-            
-            // Validate title length (max 100 chars)
-            $title = $_POST['gsxr_777_widget_title'] ?? '';
-            if (strlen($title) > 100) {
-                echo '<div class="notice notice-error"><p>' . 
-                     sprintf(__('Title is too long. Maximum 100 characters, current: %d', 'gsxr-777'), strlen($title)) . 
-                     '</p></div>';
-                return;
+
+            if ($settings_section === 'appearance') {
+                update_option('gsxr_777_widget_primary_color', $this->sanitize_color($_POST['gsxr_777_widget_primary_color'] ?? '', '#2563eb'));
+                update_option('gsxr_777_widget_secondary_color', $this->sanitize_color($_POST['gsxr_777_widget_secondary_color'] ?? '', '#1d4ed8'));
+                update_option('gsxr_777_widget_gradient_angle', $this->sanitize_gradient_angle($_POST['gsxr_777_widget_gradient_angle'] ?? 135));
+                update_option('gsxr_777_widget_chat_background_color', $this->sanitize_color($_POST['gsxr_777_widget_chat_background_color'] ?? '', '#ffffff'));
+                update_option('gsxr_777_widget_messages_background_color', $this->sanitize_color($_POST['gsxr_777_widget_messages_background_color'] ?? '', '#ffffff'));
+                update_option('gsxr_777_widget_assistant_background_color', $this->sanitize_color($_POST['gsxr_777_widget_assistant_background_color'] ?? '', '#f0f0f0'));
+                update_option('gsxr_777_widget_assistant_text_color', $this->sanitize_color($_POST['gsxr_777_widget_assistant_text_color'] ?? '', '#333333'));
+                update_option('gsxr_777_widget_user_text_color', $this->sanitize_color($_POST['gsxr_777_widget_user_text_color'] ?? '', '#ffffff'));
+                update_option('gsxr_777_widget_input_background_color', $this->sanitize_color($_POST['gsxr_777_widget_input_background_color'] ?? '', '#ffffff'));
+                update_option('gsxr_777_widget_input_text_color', $this->sanitize_color($_POST['gsxr_777_widget_input_text_color'] ?? '', '#333333'));
+                update_option('gsxr_777_widget_font_family', $this->sanitize_font_family($_POST['gsxr_777_widget_font_family'] ?? ''));
+                update_option('gsxr_777_widget_chat_font_family', $this->sanitize_font_family($_POST['gsxr_777_widget_chat_font_family'] ?? ''));
+            } else {
+                // Validate welcome message length (max 500 chars)
+                $welcome = $_POST['gsxr_777_widget_welcome'] ?? '';
+                if (strlen($welcome) > 500) {
+                    echo '<div class="notice notice-error"><p>' .
+                         sprintf(__('Welcome message is too long. Maximum 500 characters, current: %d', 'gsxr-777'), strlen($welcome)) .
+                         '</p></div>';
+                    return;
+                }
+
+                // Validate title length (max 100 chars)
+                $title = $_POST['gsxr_777_widget_title'] ?? '';
+                if (strlen($title) > 100) {
+                    echo '<div class="notice notice-error"><p>' .
+                         sprintf(__('Title is too long. Maximum 100 characters, current: %d', 'gsxr-777'), strlen($title)) .
+                         '</p></div>';
+                    return;
+                }
+
+                // Validate widget dimensions
+                $width = intval($_POST['gsxr_777_widget_width'] ?? 400);
+                $height = intval($_POST['gsxr_777_widget_height'] ?? 600);
+
+                if ($width < 300 || $width > 800 || $height < 400 || $height > 900) {
+                    echo '<div class="notice notice-error"><p>' .
+                         __('Invalid widget dimensions. Width must be 300-800px and height 400-900px.', 'gsxr-777') .
+                         '</p></div>';
+                    return;
+                }
+
+                update_option('gsxr_777_widget_title', sanitize_text_field($title));
+                update_option('gsxr_777_widget_welcome', sanitize_textarea_field($welcome));
+                update_option('gsxr_777_widget_placeholder', sanitize_text_field($_POST['gsxr_777_widget_placeholder']));
+                update_option('gsxr_777_widget_position', $this->sanitize_position($_POST['gsxr_777_widget_position']));
+                update_option('gsxr_777_widget_width', $width);
+                update_option('gsxr_777_widget_height', $height);
             }
-            
-            // Validate widget dimensions
-            $width = intval($_POST['gsxr_777_widget_width'] ?? 400);
-            $height = intval($_POST['gsxr_777_widget_height'] ?? 600);
-            
-            if ($width < 300 || $width > 800 || $height < 400 || $height > 900) {
-                echo '<div class="notice notice-error"><p>' . 
-                     __('Invalid widget dimensions. Width must be 300-800px and height 400-900px.', 'gsxr-777') . 
-                     '</p></div>';
-                return;
-            }
-            
-            update_option('gsxr_777_widget_title', sanitize_text_field($title));
-            update_option('gsxr_777_widget_welcome', sanitize_textarea_field($welcome));
-            update_option('gsxr_777_widget_placeholder', sanitize_text_field($_POST['gsxr_777_widget_placeholder']));
-            update_option('gsxr_777_widget_position', $this->sanitize_position($_POST['gsxr_777_widget_position']));
-            update_option('gsxr_777_widget_primary_color', sanitize_hex_color($_POST['gsxr_777_widget_primary_color']));
-            update_option('gsxr_777_widget_width', $width);
-            update_option('gsxr_777_widget_height', $height);
-            
+
+            $active_tab = $settings_section;
             echo '<div class="notice notice-success"><p>' . __('Settings saved successfully!', 'gsxr-777') . '</p></div>';
         }
 
@@ -552,84 +711,201 @@ class GSXR_777_Admin {
         $widget_placeholder = get_option('gsxr_777_widget_placeholder', __('Type your message...', 'gsxr-777'));
         $widget_position = get_option('gsxr_777_widget_position', 'bottom-right');
         $widget_primary_color = get_option('gsxr_777_widget_primary_color', '#2563eb');
+        $widget_secondary_color = get_option('gsxr_777_widget_secondary_color', '#1d4ed8');
+        $widget_gradient_angle = get_option('gsxr_777_widget_gradient_angle', 135);
+        $widget_chat_background_color = get_option('gsxr_777_widget_chat_background_color', '#ffffff');
+        $widget_messages_background_color = get_option('gsxr_777_widget_messages_background_color', '#ffffff');
+        $widget_assistant_background_color = get_option('gsxr_777_widget_assistant_background_color', '#f0f0f0');
+        $widget_assistant_text_color = get_option('gsxr_777_widget_assistant_text_color', '#333333');
+        $widget_user_text_color = get_option('gsxr_777_widget_user_text_color', '#ffffff');
+        $widget_input_background_color = get_option('gsxr_777_widget_input_background_color', '#ffffff');
+        $widget_input_text_color = get_option('gsxr_777_widget_input_text_color', '#333333');
+        $widget_font_family = get_option('gsxr_777_widget_font_family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif');
+        $widget_chat_font_family = get_option('gsxr_777_widget_chat_font_family', 'inherit');
         $widget_width = get_option('gsxr_777_widget_width', 400);
         $widget_height = get_option('gsxr_777_widget_height', 600);
+        $tabs_base_url = admin_url('admin.php?page=gsxr-777-widget');
         ?>
         <div class="wrap">
             <h1><?php _e('Widget Settings', 'gsxr-777'); ?></h1>
+
+            <h2 class="nav-tab-wrapper">
+                <a href="<?php echo esc_url(add_query_arg('tab', 'general', $tabs_base_url)); ?>" class="nav-tab <?php echo $active_tab === 'general' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Основные', 'gsxr-777'); ?>
+                </a>
+                <a href="<?php echo esc_url(add_query_arg('tab', 'appearance', $tabs_base_url)); ?>" class="nav-tab <?php echo $active_tab === 'appearance' ? 'nav-tab-active' : ''; ?>">
+                    <?php _e('Внешний вид', 'gsxr-777'); ?>
+                </a>
+            </h2>
             
             <form method="post" action="">
                 <?php wp_nonce_field('gsxr_777_widget_settings'); ?>
+                <input type="hidden" name="gsxr_777_widget_settings_section" value="<?php echo esc_attr($active_tab); ?>" />
                 
                 <table class="form-table">
-                    <tr>
-                        <th scope="row"><?php _e('Widget Title', 'gsxr-777'); ?></th>
-                        <td>
-                            <input type="text" name="gsxr_777_widget_title" 
-                                   value="<?php echo esc_attr($widget_title); ?>" class="regular-text" />
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Welcome Message', 'gsxr-777'); ?></th>
-                        <td>
-                            <textarea name="gsxr_777_widget_welcome" rows="3" class="large-text"><?php echo esc_textarea($widget_welcome); ?></textarea>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Input Placeholder', 'gsxr-777'); ?></th>
-                        <td>
-                            <input type="text" name="gsxr_777_widget_placeholder" 
-                                   value="<?php echo esc_attr($widget_placeholder); ?>" class="regular-text" />
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Position', 'gsxr-777'); ?></th>
-                        <td>
-                            <select name="gsxr_777_widget_position">
-                                <option value="bottom-right" <?php selected($widget_position, 'bottom-right'); ?>>
-                                    <?php _e('Bottom Right', 'gsxr-777'); ?>
-                                </option>
-                                <option value="bottom-left" <?php selected($widget_position, 'bottom-left'); ?>>
-                                    <?php _e('Bottom Left', 'gsxr-777'); ?>
-                                </option>
-                                <option value="top-right" <?php selected($widget_position, 'top-right'); ?>>
-                                    <?php _e('Top Right', 'gsxr-777'); ?>
-                                </option>
-                                <option value="top-left" <?php selected($widget_position, 'top-left'); ?>>
-                                    <?php _e('Top Left', 'gsxr-777'); ?>
-                                </option>
-                            </select>
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Primary Color', 'gsxr-777'); ?></th>
-                        <td>
-                            <input type="color" name="gsxr_777_widget_primary_color" 
-                                   value="<?php echo esc_attr($widget_primary_color); ?>" />
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Width (px)', 'gsxr-777'); ?></th>
-                        <td>
-                            <input type="number" name="gsxr_777_widget_width" 
-                                   value="<?php echo esc_attr($widget_width); ?>" 
-                                   min="300" max="800" class="small-text" />
-                        </td>
-                    </tr>
-                    
-                    <tr>
-                        <th scope="row"><?php _e('Height (px)', 'gsxr-777'); ?></th>
-                        <td>
-                            <input type="number" name="gsxr_777_widget_height" 
-                                   value="<?php echo esc_attr($widget_height); ?>" 
-                                   min="400" max="900" class="small-text" />
-                        </td>
-                    </tr>
+                    <?php if ($active_tab === 'appearance'): ?>
+                        <tr>
+                            <th scope="row"><?php _e('Primary Color', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_primary_color"
+                                       value="<?php echo esc_attr($widget_primary_color); ?>" />
+                                <p class="description"><?php _e('Main accent color for buttons, links and focus states.', 'gsxr-777'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Secondary Gradient Color', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_secondary_color"
+                                       value="<?php echo esc_attr($widget_secondary_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Gradient Angle', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="number" name="gsxr_777_widget_gradient_angle"
+                                       value="<?php echo esc_attr($widget_gradient_angle); ?>"
+                                       min="0" max="360" class="small-text" />
+                                <p class="description"><?php _e('Used for header/button/message gradients.', 'gsxr-777'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Chat Window Background', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_chat_background_color"
+                                       value="<?php echo esc_attr($widget_chat_background_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Messages Area Background', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_messages_background_color"
+                                       value="<?php echo esc_attr($widget_messages_background_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Assistant Message Background', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_assistant_background_color"
+                                       value="<?php echo esc_attr($widget_assistant_background_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Assistant Message Text', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_assistant_text_color"
+                                       value="<?php echo esc_attr($widget_assistant_text_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('User Message Text', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_user_text_color"
+                                       value="<?php echo esc_attr($widget_user_text_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Input Background', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_input_background_color"
+                                       value="<?php echo esc_attr($widget_input_background_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Input Text Color', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="color" name="gsxr_777_widget_input_text_color"
+                                       value="<?php echo esc_attr($widget_input_text_color); ?>" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Widget Font Family', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="text" name="gsxr_777_widget_font_family"
+                                       value="<?php echo esc_attr($widget_font_family); ?>" class="regular-text" />
+                                <p class="description"><?php _e('Example: "Segoe UI", Roboto, Arial, sans-serif', 'gsxr-777'); ?></p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Chat Font Family', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="text" name="gsxr_777_widget_chat_font_family"
+                                       value="<?php echo esc_attr($widget_chat_font_family); ?>" class="regular-text" />
+                                <p class="description"><?php _e('Used in chat messages and input area.', 'gsxr-777'); ?></p>
+                            </td>
+                        </tr>
+                    <?php else: ?>
+                        <tr>
+                            <th scope="row"><?php _e('Widget Title', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="text" name="gsxr_777_widget_title"
+                                       value="<?php echo esc_attr($widget_title); ?>" class="regular-text" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Welcome Message', 'gsxr-777'); ?></th>
+                            <td>
+                                <textarea name="gsxr_777_widget_welcome" rows="3" class="large-text"><?php echo esc_textarea($widget_welcome); ?></textarea>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Input Placeholder', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="text" name="gsxr_777_widget_placeholder"
+                                       value="<?php echo esc_attr($widget_placeholder); ?>" class="regular-text" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Position', 'gsxr-777'); ?></th>
+                            <td>
+                                <select name="gsxr_777_widget_position">
+                                    <option value="bottom-right" <?php selected($widget_position, 'bottom-right'); ?>>
+                                        <?php _e('Bottom Right', 'gsxr-777'); ?>
+                                    </option>
+                                    <option value="bottom-left" <?php selected($widget_position, 'bottom-left'); ?>>
+                                        <?php _e('Bottom Left', 'gsxr-777'); ?>
+                                    </option>
+                                    <option value="top-right" <?php selected($widget_position, 'top-right'); ?>>
+                                        <?php _e('Top Right', 'gsxr-777'); ?>
+                                    </option>
+                                    <option value="top-left" <?php selected($widget_position, 'top-left'); ?>>
+                                        <?php _e('Top Left', 'gsxr-777'); ?>
+                                    </option>
+                                </select>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Width (px)', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="number" name="gsxr_777_widget_width"
+                                       value="<?php echo esc_attr($widget_width); ?>"
+                                       min="300" max="800" class="small-text" />
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row"><?php _e('Height (px)', 'gsxr-777'); ?></th>
+                            <td>
+                                <input type="number" name="gsxr_777_widget_height"
+                                       value="<?php echo esc_attr($widget_height); ?>"
+                                       min="400" max="900" class="small-text" />
+                            </td>
+                        </tr>
+                    <?php endif; ?>
                 </table>
                 
                 <p class="submit">
@@ -638,12 +914,14 @@ class GSXR_777_Admin {
                 </p>
             </form>
             
-            <h2><?php _e('Shortcode Usage', 'gsxr-777'); ?></h2>
-            <p><?php _e('Use this shortcode to display the chat widget:', 'gsxr-777'); ?></p>
-            <code>[gsxr_777_chat]</code>
-            
-            <p><?php _e('With custom parameters:', 'gsxr-777'); ?></p>
-            <code>[gsxr_777_chat title="Support" position="bottom-left"]</code>
+            <?php if ($active_tab === 'general'): ?>
+                <h2><?php _e('Shortcode Usage', 'gsxr-777'); ?></h2>
+                <p><?php _e('Use this shortcode to display the chat widget:', 'gsxr-777'); ?></p>
+                <code>[gsxr_777_chat]</code>
+
+                <p><?php _e('With custom parameters:', 'gsxr-777'); ?></p>
+                <code>[gsxr_777_chat title="Support" position="bottom-left"]</code>
+            <?php endif; ?>
         </div>
         <?php
     }
@@ -867,9 +1145,50 @@ class GSXR_777_Admin {
         return max(0, min(2, $temp));
     }
 
+    public function sanitize_top_p($top_p) {
+        $top_p = floatval($top_p);
+        return max(0, min(1, $top_p));
+    }
+
+    public function sanitize_penalty($penalty) {
+        $penalty = floatval($penalty);
+        return max(-2, min(2, $penalty));
+    }
+
+    public function sanitize_history_limit($limit) {
+        $limit = intval($limit);
+        return max(1, min(100, $limit));
+    }
+
+    public function sanitize_personality($personality) {
+        $allowed = array('friendly', 'sarcastic', 'pragmatic', 'funny', 'formal', 'empathetic', 'expert', 'concise');
+        return in_array($personality, $allowed, true) ? $personality : 'friendly';
+    }
+
     public function sanitize_position($position) {
         $allowed = array('bottom-right', 'bottom-left', 'top-right', 'top-left');
         return in_array($position, $allowed) ? $position : 'bottom-right';
+    }
+
+    public function sanitize_gradient_angle($angle) {
+        $angle = intval($angle);
+        return max(0, min(360, $angle));
+    }
+
+    public function sanitize_font_family($font_family) {
+        $font_family = sanitize_text_field($font_family);
+        $font_family = preg_replace('/[^a-zA-Z0-9,\s"\'\-]/', '', $font_family);
+
+        if ($font_family === '') {
+            return '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        }
+
+        return $font_family;
+    }
+
+    public function sanitize_color($color, $default = '#2563eb') {
+        $sanitized = sanitize_hex_color($color);
+        return $sanitized ? $sanitized : $default;
     }
 
     public function sanitize_widget_size($size) {

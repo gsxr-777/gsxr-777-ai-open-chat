@@ -104,6 +104,8 @@
             this.input = inputContainer.querySelector('.gsxr777-chat-input');
             this.sendButton = inputContainer.querySelector('.gsxr777-chat-send');
 
+            this.applyTheme();
+
             // Setup input handlers
             this.input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -124,6 +126,38 @@
             if (this.config.welcome) {
                 this.addMessage('assistant', this.config.welcome);
             }
+        }
+
+        applyTheme() {
+            if (!this.container) {
+                return;
+            }
+
+            const theme = this.config.theme || {};
+            const primaryColor = theme.primaryColor || this.config.primaryColor || '#2563eb';
+            const secondaryColor = theme.secondaryColor || '#1d4ed8';
+            const gradientAngle = Number.isFinite(parseInt(theme.gradientAngle, 10)) ? parseInt(theme.gradientAngle, 10) : 135;
+            const accentGradient = `linear-gradient(${gradientAngle}deg, ${primaryColor} 0%, ${secondaryColor} 100%)`;
+
+            const vars = {
+                '--gsxr-accent-color': primaryColor,
+                '--gsxr-accent-gradient': accentGradient,
+                '--gsxr-window-bg': theme.windowBackground || '#ffffff',
+                '--gsxr-messages-bg': theme.messagesBackground || '#ffffff',
+                '--gsxr-assistant-bg': theme.assistantBackground || '#f0f0f0',
+                '--gsxr-assistant-color': theme.assistantTextColor || '#333333',
+                '--gsxr-user-color': theme.userTextColor || '#ffffff',
+                '--gsxr-input-bg': theme.inputBackground || '#ffffff',
+                '--gsxr-input-color': theme.inputTextColor || '#333333',
+                '--gsxr-widget-font-family': theme.widgetFontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                '--gsxr-chat-font-family': theme.chatFontFamily || 'inherit'
+            };
+
+            Object.entries(vars).forEach(([name, value]) => {
+                if (typeof value === 'string' && value.trim() !== '') {
+                    this.container.style.setProperty(name, value);
+                }
+            });
         }
 
         getUrlWithLang(url) {
@@ -194,6 +228,7 @@
                     this.config = { ...this.config, ...data };
                     this.strings = data.strings || this.strings;
                     this.currentLanguage = data.language || this.currentLanguage;
+                    this.applyTheme();
 
                     // Only update UI if language actually changed
                     if (oldLanguage !== this.currentLanguage) {
@@ -474,7 +509,8 @@
 
         async loadHistory() {
             try {
-                const response = await fetch(this.config.historyUrl + this.sessionId, {
+                const historyUrl = this.getUrlWithLang(this.config.historyUrl + this.sessionId);
+                const response = await fetch(historyUrl, {
                     method: 'GET',
                     headers: {
                         'X-WP-Nonce': this.config.nonce

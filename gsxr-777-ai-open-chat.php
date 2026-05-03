@@ -3,7 +3,7 @@
  * Plugin Name: GSXR-777 AI Open Chat
  * Plugin URI: https://github.com/gmen1057/gsxr-777-ai-open-chat
  * Description: Universal AI chat widget for WordPress with support for OpenAI, Claude, Gemini, and other LLM providers.
- * Version: 1.2.0
+ * Version: 1.3.0
  * Author: GSXR-777
  * Text Domain: gsxr-777
  * Domain Path: /languages
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('GSXR_777_VERSION', '1.2.0');
+define('GSXR_777_VERSION', '1.3.0');
 define('GSXR_777_PLUGIN_FILE', __FILE__);
 define('GSXR_777_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('GSXR_777_PLUGIN_URL', plugin_dir_url(__FILE__));

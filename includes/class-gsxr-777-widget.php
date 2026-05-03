@@ -72,7 +72,8 @@ class GSXR_777_Widget {
         $stats->track_message($session_id, 'user', $sanitized_message);
         
         // Get conversation history
-        $history = $this->get_conversation_history($session_id);
+        $history_limit = intval(get_option('gsxr_777_api_history_limit', 20));
+        $history = $this->get_conversation_history($session_id, $history_limit);
         
         // Add current message to history
         $history[] = array(
@@ -203,6 +204,7 @@ class GSXR_777_Widget {
             'gsxr777Config.title = ' . wp_json_encode($atts['title']) . '; ' .
             'gsxr777Config.position = ' . wp_json_encode($atts['position']) . '; ' .
             'gsxr777Config.primaryColor = ' . wp_json_encode($atts['color']) . '; ' .
+            'if (gsxr777Config.theme) { gsxr777Config.theme.primaryColor = ' . wp_json_encode($atts['color']) . '; } ' .
             'gsxr777Config.width = ' . intval($atts['width']) . '; ' .
             'gsxr777Config.height = ' . intval($atts['height']) . '; }';
         
@@ -282,10 +284,36 @@ class GSXR_777_Widget {
         
         // Append language to REST URLs if available
         $lang_param = $current_lang ? '?lang=' . $current_lang : '';
+
+        $sanitize_color = function($value, $default) {
+            $sanitized = sanitize_hex_color($value);
+            return $sanitized ? $sanitized : $default;
+        };
+
+        $sanitize_font = function($font, $default) {
+            $font = sanitize_text_field($font);
+            $font = preg_replace('/[^a-zA-Z0-9,\s"\'\-]/', '', $font);
+            return $font !== '' ? $font : $default;
+        };
+
+        $primary_color = $sanitize_color(get_option('gsxr_777_widget_primary_color', '#2563eb'), '#2563eb');
+        $secondary_color = $sanitize_color(get_option('gsxr_777_widget_secondary_color', '#1d4ed8'), '#1d4ed8');
+        $gradient_angle = intval(get_option('gsxr_777_widget_gradient_angle', 135));
+        $gradient_angle = max(0, min(360, $gradient_angle));
+
+        $window_background = $sanitize_color(get_option('gsxr_777_widget_chat_background_color', '#ffffff'), '#ffffff');
+        $messages_background = $sanitize_color(get_option('gsxr_777_widget_messages_background_color', '#ffffff'), '#ffffff');
+        $assistant_background = $sanitize_color(get_option('gsxr_777_widget_assistant_background_color', '#f0f0f0'), '#f0f0f0');
+        $assistant_text = $sanitize_color(get_option('gsxr_777_widget_assistant_text_color', '#333333'), '#333333');
+        $user_text = $sanitize_color(get_option('gsxr_777_widget_user_text_color', '#ffffff'), '#ffffff');
+        $input_background = $sanitize_color(get_option('gsxr_777_widget_input_background_color', '#ffffff'), '#ffffff');
+        $input_text = $sanitize_color(get_option('gsxr_777_widget_input_text_color', '#333333'), '#333333');
+        $widget_font = $sanitize_font(get_option('gsxr_777_widget_font_family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'), '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif');
+        $chat_font = $sanitize_font(get_option('gsxr_777_widget_chat_font_family', 'inherit'), 'inherit');
         
         return array(
             'apiUrl' => rest_url('gsxr-777/v1/chat') . $lang_param,
-            'historyUrl' => rest_url('gsxr-777/v1/history/') . $lang_param,
+            'historyUrl' => rest_url('gsxr-777/v1/history/'),
             'stringsUrl' => rest_url('gsxr-777/v1/strings/') . $lang_param,
             'configUrl' => rest_url('gsxr-777/v1/config/') . $lang_param,
             'nonce' => wp_create_nonce('wp_rest'),
@@ -293,9 +321,23 @@ class GSXR_777_Widget {
             'welcome' => $welcome,
             'placeholder' => $placeholder,
             'position' => get_option('gsxr_777_widget_position', 'bottom-right'),
-            'primaryColor' => get_option('gsxr_777_widget_primary_color', '#2563eb'),
+            'primaryColor' => $primary_color,
             'width' => intval(get_option('gsxr_777_widget_width', 400)),
             'height' => intval(get_option('gsxr_777_widget_height', 600)),
+            'theme' => array(
+                'primaryColor' => $primary_color,
+                'secondaryColor' => $secondary_color,
+                'gradientAngle' => $gradient_angle,
+                'windowBackground' => $window_background,
+                'messagesBackground' => $messages_background,
+                'assistantBackground' => $assistant_background,
+                'assistantTextColor' => $assistant_text,
+                'userTextColor' => $user_text,
+                'inputBackground' => $input_background,
+                'inputTextColor' => $input_text,
+                'widgetFontFamily' => $widget_font,
+                'chatFontFamily' => $chat_font
+            ),
             'language' => $current_locale,
             'strings' => array(
                 'send' => __('Send', 'gsxr-777'),
@@ -323,7 +365,7 @@ class GSXR_777_Widget {
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT role, content FROM {$table_name} 
              WHERE session_id = %s 
-             ORDER BY created_at ASC 
+             ORDER BY created_at DESC 
              LIMIT %d",
             $session_id,
             $limit
@@ -333,6 +375,8 @@ class GSXR_777_Widget {
         if (is_null($results)) {
             return array();
         }
+
+        $results = array_reverse($results);
         
         $history = array();
         foreach ($results as $row) {

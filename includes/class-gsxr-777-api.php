@@ -19,7 +19,14 @@ class GSXR_777_API {
         $api_model = isset($runtime_config['api_model']) ? $runtime_config['api_model'] : get_option('gsxr_777_api_model');
         $temperature = isset($runtime_config['temperature']) ? $runtime_config['temperature'] : get_option('gsxr_777_api_temperature', 0.7);
         $max_tokens = isset($runtime_config['max_tokens']) ? $runtime_config['max_tokens'] : get_option('gsxr_777_api_max_tokens', 1000);
+        $top_p = isset($runtime_config['top_p']) ? $runtime_config['top_p'] : get_option('gsxr_777_api_top_p', 1);
+        $frequency_penalty = isset($runtime_config['frequency_penalty']) ? $runtime_config['frequency_penalty'] : get_option('gsxr_777_api_frequency_penalty', 0);
+        $presence_penalty = isset($runtime_config['presence_penalty']) ? $runtime_config['presence_penalty'] : get_option('gsxr_777_api_presence_penalty', 0);
         $api_project_id = isset($runtime_config['api_project_id']) ? $runtime_config['api_project_id'] : get_option('gsxr_777_api_project_id', '');
+
+        $top_p = max(0, min(1, floatval($top_p)));
+        $frequency_penalty = max(-2, min(2, floatval($frequency_penalty)));
+        $presence_penalty = max(-2, min(2, floatval($presence_penalty)));
 
         if (empty($api_base_url) || empty($api_key) || empty($api_model)) {
             return array(
@@ -53,7 +60,10 @@ class GSXR_777_API {
             'model' => $api_model,
             'messages' => $api_messages,
             'temperature' => floatval($temperature),
-            'max_tokens' => intval($max_tokens)
+            'max_tokens' => intval($max_tokens),
+            'top_p' => $top_p,
+            'frequency_penalty' => $frequency_penalty,
+            'presence_penalty' => $presence_penalty
         );
 
         // Determine API format based on base URL
@@ -168,8 +178,20 @@ class GSXR_777_API {
     public function build_system_prompt($context) {
         $knowledge = new GSXR_777_Knowledge();
         $knowledge_content = $knowledge->get_aggregated_content();
-        
+
+        $personality = get_option('gsxr_777_api_personality', 'friendly');
+        $personality_instruction = $this->get_personality_instruction($personality);
+        $custom_instructions = trim(get_option('gsxr_777_api_system_instructions', ''));
+
         $prompt = __('You are a helpful AI assistant integrated into a WordPress website.', 'gsxr-777');
+
+        if (!empty($personality_instruction)) {
+            $prompt .= "\n\n" . __('Assistant personality:', 'gsxr-777') . "\n" . $personality_instruction;
+        }
+
+        if (!empty($custom_instructions)) {
+            $prompt .= "\n\n" . __('Additional system instructions:', 'gsxr-777') . "\n" . $custom_instructions;
+        }
         
         if (!empty($knowledge_content)) {
             $prompt .= "\n\n" . __('Knowledge Base:', 'gsxr-777') . "\n" . $knowledge_content;
@@ -192,6 +214,21 @@ class GSXR_777_API {
         }
         
         return $prompt;
+    }
+
+    private function get_personality_instruction($personality) {
+        $map = array(
+            'friendly' => __('Be warm, polite, and supportive. Keep the tone approachable.', 'gsxr-777'),
+            'sarcastic' => __('Use light sarcasm carefully, without insulting the user. Keep answers useful.', 'gsxr-777'),
+            'pragmatic' => __('Be practical and action-oriented. Focus on clear steps and outcomes.', 'gsxr-777'),
+            'funny' => __('Use a playful and humorous tone while keeping answers accurate.', 'gsxr-777'),
+            'formal' => __('Use formal, professional language and structured responses.', 'gsxr-777'),
+            'empathetic' => __('Show empathy, acknowledge user context, and respond with care.', 'gsxr-777'),
+            'expert' => __('Respond as a domain expert with concise technical precision.', 'gsxr-777'),
+            'concise' => __('Keep responses short, direct, and to the point.', 'gsxr-777')
+        );
+
+        return isset($map[$personality]) ? $map[$personality] : $map['friendly'];
     }
 
     private function send_openai_request($api_base_url, $api_key, $payload) {
@@ -365,6 +402,8 @@ class GSXR_777_API {
         $anthropic_payload = array(
             'model' => $payload['model'],
             'max_tokens' => $payload['max_tokens'],
+            'temperature' => $payload['temperature'],
+            'top_p' => $payload['top_p'],
             'messages' => $messages
         );
         
@@ -442,7 +481,8 @@ class GSXR_777_API {
             'contents' => $contents,
             'generationConfig' => array(
                 'temperature' => $payload['temperature'],
-                'maxOutputTokens' => $payload['max_tokens']
+                'maxOutputTokens' => $payload['max_tokens'],
+                'topP' => $payload['top_p']
             )
         );
         
