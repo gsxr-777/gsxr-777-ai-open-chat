@@ -1,14 +1,14 @@
 === GSXR-777 AI Open Chat ===
 Contributors: gsxr777
-Tags: ai, chat, chatbot, openai, claude, gemini, customer support, artificial intelligence
+Tags: ai, chat, chatbot, openai, customer support
 Requires at least: 5.0
-Tested up to: 6.4
+Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
-License: MIT
-License URI: https://opensource.org/licenses/MIT
+Stable tag: 1.4.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Universal AI chat widget for WordPress with support for OpenAI, Claude, Gemini, and other LLM providers. Easy setup, customizable design, multilingual support.
+AI chat widget for WordPress with multiple providers, customizable design, and multilingual support.
 
 == Description ==
 
@@ -18,14 +18,14 @@ GSXR-777 AI Open Chat is a powerful and flexible AI chatbot plugin for WordPress
 
 * **Universal AI Support** - Works with OpenAI, Claude, Gemini, GigaChat, YandexGPT, Ollama, and any OpenAI-compatible API
 * **Page Context Awareness** - Bot understands the current page content and can answer questions about it
-* **Knowledge Base Management** - Create and manage custom knowledge base files in Markdown format
+* **Database Mini-RAG** - Searches only relevant chunks from published WordPress content and custom Markdown documents
 * **Multilingual Support** - Built-in support for English and Russian, with easy translation capabilities
 * **Customizable Widget** - Full control over colors, position, size, and messages
-* **Security Features** - Rate limiting, attack detection, IP blocking, and input sanitization
+* **Security Features** - Signed chat sessions, atomic IP/session rate limiting, authenticated API-key encryption, and input validation
 * **Chat History** - Persistent conversation history across page reloads
 * **Statistics Dashboard** - Track usage, sessions, and performance metrics
 * **Mobile Responsive** - Optimized for all devices and screen sizes
-* **Privacy Controls** - Configure what page context is shared with AI providers
+* **Privacy Controls** - Configure page context, metadata storage, retention periods, and visitor-controlled history deletion
 
 = Supported AI Providers =
 
@@ -51,25 +51,25 @@ GSXR-777 AI Open Chat is a powerful and flexible AI chatbot plugin for WordPress
 
 Use the `[gsxr_777_chat]` shortcode to display the chat widget anywhere on your site with custom parameters:
 
-`[gsxr_777_chat title="Support" position="bottom-left" color="#ff6b35"]`
+`[gsxr_777_chat title="Support" color="#ff6b35" width="420" height="640"]`
 
 = Developer Friendly =
 
 * Clean, well-documented code
-* WordPress coding standards
+* Automated PHP syntax, WordPress integration-test, and coding-standard tooling
 * Extensive hooks and filters
 * REST API endpoints
-* Secure nonce verification
+* Signed public sessions and nonce-protected administration
 * Proper sanitization and escaping
 
 = Privacy & Security =
 
 * All API keys are encrypted before storage
 * Rate limiting prevents abuse
-* Attack detection (XSS, SQL injection, prompt injection)
-* IP blocking for malicious users
-* Configurable privacy levels for different pages
-* GDPR compliant data handling
+* Atomic IP and session rate limiting
+* Retrieved/site content is isolated from trusted system instructions
+* Configurable page context, metadata storage, and retention periods
+* Privacy-policy helper text and visitor-controlled conversation deletion
 
 == Installation ==
 
@@ -118,11 +118,11 @@ Yes, the widget is fully responsive and optimized for mobile devices.
 
 = How does the knowledge base work? =
 
-You can create Markdown files with custom content that the AI will use to answer questions. This allows you to provide specific information about your business, products, or services.
+The plugin stores Markdown documents in the WordPress database and splits them into searchable chunks. Published public posts and pages are indexed too. For each question, the bot retrieves a small set of relevant chunks instead of sending the entire knowledge base to the AI provider.
 
 = Is it secure? =
 
-Yes, the plugin includes multiple security features including rate limiting, attack detection, IP blocking, input sanitization, and encrypted API key storage.
+Yes. The plugin uses signed sessions, atomic rate limiting, authenticated API-key encryption, strict endpoint validation, input validation, and generic public API errors.
 
 = Can I use it on multiple pages? =
 
@@ -134,7 +134,11 @@ The plugin interface supports English and Russian out of the box, and you can ea
 
 = What about GDPR compliance? =
 
-The plugin is designed with privacy in mind. You can configure what page context is shared with AI providers and all data handling follows WordPress best practices.
+The plugin is designed with privacy controls, but installing it alone does not make a site legally compliant. You can disable page context and diagnostic metadata, configure retention, expose the generated privacy-policy text, and let visitors clear their conversation.
+
+= What data is sent to an AI provider? =
+
+When the site owner configures an AI provider, visitor messages are sent to that provider to generate replies. If page context is enabled, the current page title, URL, selected text, and relevant page or knowledge-base excerpts may also be sent. The plugin does not send data to a provider until the owner configures an API endpoint and key. Review the provider's terms and privacy policy, and update your site's privacy notice before enabling the chat.
 
 == Screenshots ==
 
@@ -146,6 +150,14 @@ The plugin is designed with privacy in mind. You can configure what page context
 6. Mobile responsive design
 
 == Changelog ==
+
+= 1.4.0 =
+* Added signed persistent chat sessions and protected history endpoints
+* Added atomic IP/session rate limiting and trusted-proxy handling
+* Added a database-backed mini-RAG index for knowledge files and WordPress content
+* Moved knowledge documents from public uploads into the WordPress database
+* Added automatic retention cleanup and visitor-controlled history deletion
+* Improved API-key encryption, accessibility, dark mode, shortcode rendering, and admin security
 
 = 1.0.0 =
 * Initial release
@@ -160,13 +172,13 @@ The plugin is designed with privacy in mind. You can configure what page context
 
 == Upgrade Notice ==
 
-= 1.0.0 =
-Initial release of GSXR-777 AI Open Chat. Install now to add intelligent AI chat capabilities to your WordPress site.
+= 1.4.0 =
+Adds signed sessions, authenticated key encryption, database mini-RAG, automatic retention cleanup, and an accessible responsive widget.
 
 == Support ==
 
 For support, feature requests, or bug reports, please visit:
-* GitHub: https://github.com/gmen1057/gsxr-777-ai-open-chat
+* GitHub: https://github.com/gsxr-777/gsxr-777-ai-open-chat
 * Support Forum: https://wordpress.org/support/plugin/gsxr-777-ai-open-chat/
 
 == Contributing ==
@@ -175,4 +187,4 @@ We welcome contributions! Please see our GitHub repository for contribution guid
 
 == License ==
 
-This plugin is licensed under the MIT License. See the LICENSE file for details.
+This plugin is licensed under the GNU General Public License, version 2 or later. See the LICENSE file for details.

@@ -49,6 +49,19 @@
     color: #991b1b;
 }
 
+.gsxr777-provider-links {
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.gsxr777-key-saved {
+    color: #1d7f1d;
+}
+
+.gsxr777-test-result {
+    margin-top: 1.25rem;
+}
+
 /* Knowledge Base */
 .gsxr777-knowledge-container {
     display: flex;
@@ -90,13 +103,13 @@
     border-bottom: none;
 }
 
-.gsxr777-file-list a {
+.gsxr777-file-list .gsxr777-load-file {
     text-decoration: none;
     color: #2563eb;
     font-weight: 500;
 }
 
-.gsxr777-file-list a:hover {
+.gsxr777-file-list .gsxr777-load-file:hover {
     text-decoration: underline;
 }
 
@@ -109,6 +122,10 @@
 .gsxr777-file-actions {
     display: flex;
     gap: 5px;
+}
+
+.gsxr777-index-status {
+    margin-left: 0.625rem;
 }
 
 .gsxr777-markdown-editor {
@@ -408,4 +425,13 @@
 
 .gsxr777-toggle input:checked + .gsxr777-toggle-slider:before {
     transform: translateX(26px);
+}
+/* Shared admin utilities */
+.gsxr777-provider-link[hidden] {
+    display: none;
+}
+
+.gsxr777-provider-link + .gsxr777-provider-link,
+.gsxr777-delete-file {
+    margin-left: 0.625rem;
 }

@@ -3,10 +3,10 @@
 ## Plugin Information
 
 **Plugin Name:** GSXR-777 AI Open Chat  
-**Version:** 1.0.0  
+**Version:** 1.4.0
 **Author:** GSXR-777  
 **License:** MIT  
-**WordPress Compatibility:** 5.0 - 6.4  
+**WordPress Compatibility:** 5.0 - 7.0
 **PHP Compatibility:** 7.4+  
 
 ## Description
@@ -17,9 +17,9 @@ GSXR-777 AI Open Chat is a universal AI chatbot plugin for WordPress that suppor
 
 - **Universal AI Support** - OpenAI, Claude, Gemini, GigaChat, YandexGPT, Ollama
 - **Page Context Awareness** - Bot understands current page content
-- **Knowledge Base Management** - Custom Markdown knowledge files
+- **Database Mini-RAG** - Relevant chunks from WordPress content and custom Markdown documents
 - **Multilingual Support** - English and Russian built-in
-- **Security Features** - Rate limiting, attack detection, IP blocking
+- **Security Features** - Signed sessions, atomic rate limiting, authenticated API-key encryption
 - **Customizable Widget** - Colors, position, size, messages
 - **Statistics Dashboard** - Usage tracking and analytics
 - **Mobile Responsive** - Optimized for all devices
@@ -28,20 +28,15 @@ GSXR-777 AI Open Chat is a universal AI chatbot plugin for WordPress that suppor
 
 ```
 gsxr-777-ai-open-chat/
-├── wp-plugin-gsxr-777-ai-open-chat.php    # Main plugin file
-├── class-gsxr-777-core.php                # Core functionality
-├── class-gsxr-777-admin.php               # Admin interface
-├── class-gsxr-777-api.php                 # API integration
-├── class-gsxr-777-knowledge.php           # Knowledge base
-├── class-gsxr-777-security.php            # Security layer
-├── class-gsxr-777-stats.php               # Statistics
-├── class-gsxr-777-widget.php              # Frontend widget
-├── widget.js                              # Widget JavaScript
-├── widget.css                             # Widget styles
-├── admin-style.css                        # Admin styles
-├── admin-script.js                        # Admin JavaScript
-├── gsxr-777.pot                           # Translation template
-├── gsxr-777-ru_RU.po                      # Russian translation
+├── gsxr-777-ai-open-chat.php              # Main plugin file
+├── includes/                              # Core, API, REST, RAG, security and statistics
+├── public/js/widget.js                    # Accessible frontend widget
+├── public/css/widget.css                  # Responsive widget styles
+├── admin/js/admin-script.js               # Admin interactions
+├── admin/css/admin-style.css              # Admin styles
+├── languages/                             # Translation template and Russian catalog
+├── tests/                                 # WordPress integration tests
+├── composer.json                          # Development tooling
 ├── readme.txt                             # WordPress readme
 └── WORDPRESS_SUBMISSION.md                # This file
 ```
@@ -69,8 +64,9 @@ gsxr-777-ai-open-chat/
 
 ### 3. Knowledge Base (Optional)
 - Go to AI Chat > Knowledge Base
-- Create Markdown files with custom content
-- AI will use this information to answer questions
+- Create Markdown documents with custom content
+- Rebuild the index to include all published public posts and pages
+- The AI receives only the chunks relevant to the visitor's question
 
 ### 4. Display Widget
 - Widget appears automatically on all pages
@@ -82,15 +78,15 @@ gsxr-777-ai-open-chat/
 - **Input Sanitization** - All user inputs are properly sanitized
 - **Nonce Verification** - CSRF protection on all forms
 - **Rate Limiting** - Prevents API abuse
-- **Attack Detection** - XSS, SQL injection, prompt injection detection
-- **IP Blocking** - Automatic blocking of malicious IPs
-- **Encrypted Storage** - API keys stored encrypted
+- **Signed Sessions** - History endpoints require a server-issued HMAC token
+- **Prompt Isolation** - Site content is marked as untrusted reference data
+- **Encrypted Storage** - API keys use authenticated AES-256-GCM encryption
 
 ## Privacy Compliance
 
-- **GDPR Ready** - Configurable data collection
-- **Privacy Levels** - Control what page context is shared
-- **Local Storage** - Chat history stored in browser
+- **Privacy Controls** - Control page context and diagnostic metadata
+- **Persistent Sessions** - The browser stores only signed session credentials; messages remain in WordPress
+- **Visitor Deletion** - Visitors can delete their own conversation
 - **Data Retention** - Configurable cleanup of old data
 
 ## API Providers Supported
@@ -123,51 +119,53 @@ Basic usage:
 
 With parameters:
 ```
-[gsxr_777_chat title="Support" position="bottom-left" color="#ff6b35" width="450" height="650"]
+[gsxr_777_chat title="Support" color="#ff6b35" width="450" height="650"]
 ```
 
 ## Hooks and Filters
 
-### Actions
-- `gsxr_777_before_chat_response` - Before AI response
-- `gsxr_777_after_chat_response` - After AI response
-- `gsxr_777_security_event` - Security event triggered
-
 ### Filters
-- `gsxr_777_widget_config` - Modify widget configuration
-- `gsxr_777_system_prompt` - Customize AI system prompt
-- `gsxr_777_page_context` - Filter page context data
+- `gsxr_777_ai_request_timeout` - Provider HTTP timeout
+- `gsxr_777_browser_request_timeout` - Browser-side request timeout
+- `gsxr_777_rag_chunk_limit` - Number of retrieved chunks
+- `gsxr_777_rag_max_characters` - Maximum retrieved context size
+- `gsxr_777_history_max_characters` - Maximum conversation-history context size
+- `gsxr_777_ip_rate_limit` - Per-IP request cap
+- `gsxr_777_trusted_proxy_ips` - Explicit reverse-proxy IP/CIDR allowlist
 
 ## Database Tables
 
-The plugin creates three tables:
+The plugin creates seven tables:
 - `wp_gsxr777_sessions` - Chat sessions
 - `wp_gsxr777_messages` - Chat messages
 - `wp_gsxr777_security_log` - Security events
+- `wp_gsxr777_blocked_ips` - Temporary IP blocks
+- `wp_gsxr777_rate_limits` - Atomic fixed-window counters
+- `wp_gsxr777_knowledge_documents` - Private Markdown documents
+- `wp_gsxr777_knowledge_chunks` - Searchable mini-RAG chunks
 
 ## Uninstall Process
 
 When uninstalled (if configured):
 - Removes all database tables
 - Deletes plugin options
-- Removes knowledge base files
+- Removes knowledge documents and protected legacy files
 - Cleans up transients
 
 ## Support and Documentation
 
-- **GitHub:** https://github.com/gmen1057/gsxr-777-ai-open-chat
+- **GitHub:** https://github.com/gsxr-777/gsxr-777-ai-open-chat
 - **Documentation:** Included in plugin admin pages
 - **Support:** WordPress.org support forums
 
 ## Changelog
 
-### Version 1.0.0
-- Initial release
-- Multi-provider AI support
-- Knowledge base management
-- Security features
-- Statistics dashboard
-- Multilingual support
+### Version 1.4.0
+- Signed sessions and protected history
+- Database-backed mini-RAG
+- Authenticated API-key encryption
+- Retention cleanup and visitor deletion
+- Accessible responsive widget and hardened administration
 
 ## Testing Checklist
 
@@ -186,21 +184,21 @@ When uninstalled (if configured):
 
 ## WordPress Guidelines Compliance
 
-- ✅ Uses WordPress coding standards
 - ✅ Proper sanitization and escaping
 - ✅ Nonce verification for security
 - ✅ Internationalization ready
-- ✅ No external dependencies
+- ✅ No frontend runtime dependencies
 - ✅ GPL compatible license
 - ✅ Follows plugin header format
 - ✅ Proper database operations
 - ✅ Clean uninstall process
-- ✅ No hardcoded URLs
 - ✅ Responsive design
 - ✅ Accessibility considerations
+- ⏳ Run WordPress Coding Standards autofix/review before repository submission
+- ⏳ Complete the integration checklist above on the release WordPress/PHP matrix
 
 ## Submission Notes
 
-This plugin is ready for WordPress.org submission. All code follows WordPress standards and best practices. The plugin has been tested on multiple WordPress versions and PHP environments.
+The runtime implementation is prepared for integration testing. Complete the checklist and resolve the remaining legacy formatting findings before submitting it to WordPress.org.
 
 The plugin provides significant value to WordPress users by enabling easy integration of AI chat capabilities without requiring technical knowledge. The extensive customization options and security features make it suitable for both small websites and enterprise deployments.

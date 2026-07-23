@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<ruleset name="GSXR-777 AI Open Chat">
+    <description>WordPress Coding Standards for the plugin.</description>
+
+    <file>gsxr-777-ai-open-chat.php</file>
+    <file>includes</file>
+    <file>admin/views</file>
+
+    <exclude-pattern>vendor/*</exclude-pattern>
+    <exclude-pattern>tests/*</exclude-pattern>
+
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg value="sp"/>
+    <arg name="extensions" value="php"/>
+
+    <rule ref="WordPress"/>
+    <rule ref="WordPress-Extra"/>
+    <rule ref="WordPress-Docs"/>
+
+    <rule ref="WordPress.Files.FileName">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
+</ruleset>

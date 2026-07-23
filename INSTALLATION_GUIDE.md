@@ -253,8 +253,8 @@ Check `/wp-content/debug.log` for error messages.
 ### Performance Optimization
 
 1. **Caching**
-   - Knowledge base content is cached
-   - API responses can be cached with filters
+   - Mini-RAG sends only relevant knowledge chunks
+   - API timeout can be adjusted with the `gsxr_777_ai_request_timeout` filter
 
 2. **Database Cleanup**
    - Old chat sessions auto-cleanup after 90 days
@@ -302,7 +302,7 @@ DELETE FROM wp_options WHERE option_name LIKE 'gsxr_777_%';
 
 2. **Support Channels**
    - WordPress.org support forums
-   - GitHub issues: https://github.com/gmen1057/gsxr-777-ai-open-chat
+   - GitHub issues: https://github.com/gsxr-777/gsxr-777-ai-open-chat/issues
 
 3. **Before Asking for Help**
    - Enable debug mode

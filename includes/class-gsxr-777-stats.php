@@ -17,40 +17,23 @@ class GSXR_777_Stats {
         global $wpdb;
         
         try {
-            $table_name = $wpdb->prefix . 'gsxr777_sessions';
-            
-            // Check if session already exists
-            $existing = $wpdb->get_var($wpdb->prepare(
-                "SELECT id FROM {$table_name} WHERE session_id = %s",
-                $session_id
+            $table_name = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+
+            $result = $wpdb->query($wpdb->prepare(
+                "INSERT INTO {$table_name}
+                    (session_id, ip_address, user_agent, created_at, last_activity)
+                 VALUES (%s, %s, %s, %s, %s)
+                 ON DUPLICATE KEY UPDATE
+                    last_activity = VALUES(last_activity)",
+                $session_id,
+                sanitize_text_field($ip_address),
+                sanitize_text_field($user_agent),
+                current_time('mysql'),
+                current_time('mysql')
             ));
-            
-            if (!$existing) {
-                // Create new session
-                $result = $wpdb->insert(
-                    $table_name,
-                    array(
-                        'session_id' => $session_id,
-                        'ip_address' => sanitize_text_field($ip_address),
-                        'user_agent' => sanitize_text_field($user_agent),
-                        'created_at' => current_time('mysql'),
-                        'last_activity' => current_time('mysql')
-                    ),
-                    array('%s', '%s', '%s', '%s', '%s')
-                );
-                
-                if ($result === false && !empty($wpdb->last_error)) {
-                    error_log('GSXR-777: Failed to insert session - ' . $wpdb->last_error);
-                }
-            } else {
-                // Update last activity
-                $wpdb->update(
-                    $table_name,
-                    array('last_activity' => current_time('mysql')),
-                    array('session_id' => $session_id),
-                    array('%s'),
-                    array('%s')
-                );
+
+            if ($result === false && !empty($wpdb->last_error)) {
+                error_log('GSXR-777: Failed to store session');
             }
         } catch (Exception $e) {
             error_log('GSXR-777: Session tracking error - ' . $e->getMessage());
@@ -60,7 +43,7 @@ class GSXR_777_Stats {
     public function track_message($session_id, $role, $content, $tokens_used = 0) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_messages';
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_messages');
         
         $wpdb->insert(
             $table_name,
@@ -73,9 +56,16 @@ class GSXR_777_Stats {
             ),
             array('%s', '%s', '%s', '%d', '%s')
         );
-        
-        // Update session last activity
-        $this->track_session($session_id);
+    }
+
+    public function delete_session($session_id) {
+        global $wpdb;
+
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
+
+        $wpdb->delete($messages_table, array('session_id' => $session_id), array('%s'));
+        return $wpdb->delete($sessions_table, array('session_id' => $session_id), array('%s'));
     }
 
     public function get_stats($period = 30) {
@@ -93,8 +83,8 @@ class GSXR_777_Stats {
     public function get_total_sessions($period = 30) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_sessions';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$period} days"));
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $date_from = $this->get_period_start($period);
         
         $count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table_name} WHERE created_at >= %s",
@@ -107,8 +97,8 @@ class GSXR_777_Stats {
     public function get_total_messages($period = 30) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$period} days"));
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = $this->get_period_start($period);
         
         $count = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$table_name} WHERE created_at >= %s",
@@ -121,9 +111,9 @@ class GSXR_777_Stats {
     public function get_average_messages_per_session($period = 30) {
         global $wpdb;
         
-        $sessions_table = $wpdb->prefix . 'gsxr777_sessions';
-        $messages_table = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$period} days"));
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = $this->get_period_start($period);
         
         $avg = $wpdb->get_var($wpdb->prepare(
             "SELECT AVG(message_count) FROM (
@@ -142,8 +132,8 @@ class GSXR_777_Stats {
     public function get_total_tokens_used($period = 30) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$period} days"));
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = $this->get_period_start($period);
         
         $total = $wpdb->get_var($wpdb->prepare(
             "SELECT SUM(tokens_used) FROM {$table_name} WHERE created_at >= %s",
@@ -156,8 +146,8 @@ class GSXR_777_Stats {
     public function get_activity_chart_data($period = 30) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d', strtotime("-{$period} days"));
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = gmdate('Y-m-d', current_time('timestamp') - (max(1, intval($period)) * DAY_IN_SECONDS));
         
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT DATE(created_at) as date, COUNT(*) as messages
@@ -171,10 +161,10 @@ class GSXR_777_Stats {
         // Fill in missing dates with zero values
         $data = array();
         $current_date = strtotime($date_from);
-        $end_date = strtotime('today');
+        $end_date = current_time('timestamp');
         
         while ($current_date <= $end_date) {
-            $date_str = date('Y-m-d', $current_date);
+            $date_str = gmdate('Y-m-d', $current_date);
             $data[$date_str] = 0;
             $current_date = strtotime('+1 day', $current_date);
         }
@@ -190,8 +180,8 @@ class GSXR_777_Stats {
     public function get_popular_times($period = 30) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$period} days"));
+        $table_name = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = $this->get_period_start($period);
         
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT HOUR(created_at) as hour, COUNT(*) as messages
@@ -217,8 +207,8 @@ class GSXR_777_Stats {
     public function get_session_details($session_id) {
         global $wpdb;
         
-        $sessions_table = $wpdb->prefix . 'gsxr777_sessions';
-        $messages_table = $wpdb->prefix . 'gsxr777_messages';
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
         
         // Get session info
         $session = $wpdb->get_row($wpdb->prepare(
@@ -247,8 +237,8 @@ class GSXR_777_Stats {
     public function get_recent_sessions($limit = 10) {
         global $wpdb;
         
-        $sessions_table = $wpdb->prefix . 'gsxr777_sessions';
-        $messages_table = $wpdb->prefix . 'gsxr777_messages';
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
         
         $results = $wpdb->get_results($wpdb->prepare(
             "SELECT s.*, COUNT(m.id) as message_count
@@ -269,24 +259,31 @@ class GSXR_777_Stats {
         // Validate days parameter
         $days = max(1, intval($days));
         
-        $sessions_table = $wpdb->prefix . 'gsxr777_sessions';
-        $messages_table = $wpdb->prefix . 'gsxr777_messages';
-        $date_from = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $date_from = $this->get_period_start($days);
         
         try {
             // Delete messages using INNER JOIN for better performance and safety
             $deleted = $wpdb->query($wpdb->prepare(
                 "DELETE m FROM {$messages_table} m
                  INNER JOIN {$sessions_table} s ON m.session_id = s.session_id
-                 WHERE s.created_at < %s",
+                 WHERE s.last_activity < %s",
                 $date_from
             ));
             
             // Delete old sessions
             $wpdb->query($wpdb->prepare(
-                "DELETE FROM {$sessions_table} WHERE created_at < %s",
+                "DELETE FROM {$sessions_table} WHERE last_activity < %s",
                 $date_from
             ));
+
+            // Remove any orphaned messages left by interrupted upgrades or imports.
+            $wpdb->query(
+                "DELETE m FROM {$messages_table} m
+                 LEFT JOIN {$sessions_table} s ON m.session_id = s.session_id
+                 WHERE s.id IS NULL"
+            );
             
             return $deleted;
         } catch (Exception $e) {
@@ -318,5 +315,10 @@ class GSXR_777_Stats {
         }
         
         return $csv;
+    }
+
+    private function get_period_start($days) {
+        $days = max(1, intval($days));
+        return gmdate('Y-m-d H:i:s', current_time('timestamp') - ($days * DAY_IN_SECONDS));
     }
 }

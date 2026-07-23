@@ -16,7 +16,7 @@
     
     <testsuites>
         <testsuite name="GSXR-777 Plugin Tests">
-            <directory suffix="php">tests</directory>
+            <directory suffix="test.php">tests</directory>
         </testsuite>
     </testsuites>
 

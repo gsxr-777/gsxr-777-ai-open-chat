@@ -10,6 +10,10 @@
  * @package    Gsxr_777
  * @subpackage Gsxr_777/admin/partials
  */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
 ?>
 
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
@@ -17,14 +21,14 @@
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     <div id="gsxr777-knowledge-manager">
         <div class="knowledge-toolbar">
-            <button id="gsxr777-add-file" class="button button-primary"><?php _e('Add New File', 'gsxr-777'); ?></button>
-            <input type="file" id="gsxr777-upload-file" accept=".md" style="display: none;">
-            <button id="gsxr777-upload-btn" class="button"><?php _e('Upload File', 'gsxr-777'); ?></button>
+            <button type="button" id="gsxr777-add-file" class="button button-primary"><?php esc_html_e('Add New File', 'gsxr-777-ai-open-chat'); ?></button>
+            <input type="file" id="gsxr777-upload-file" accept=".md" hidden>
+            <button type="button" id="gsxr777-upload-btn" class="button"><?php esc_html_e('Upload File', 'gsxr-777-ai-open-chat'); ?></button>
         </div>
         <div id="gsxr777-file-list">
             <!-- File list will be populated via AJAX -->
         </div>
-        <div id="gsxr777-file-editor" style="display: none;">
+        <div id="gsxr777-file-editor" hidden>
             <!-- Editor will be populated when file is selected -->
         </div>
     </div>

@@ -16,16 +16,23 @@ class GSXR_777_Core {
     private $security;
     private $stats;
     private const VERSION_OPTION = 'gsxr_777_plugin_version';
+    private const CLEANUP_HOOK = 'gsxr_777_daily_cleanup';
+    private const REBUILD_INDEX_HOOK = 'gsxr_777_rebuild_knowledge_index';
 
     public function __construct() {
         $this->load_dependencies();
-        $this->set_locale();
     }
 
     public function run() {
-        self::maybe_upgrade();
+        $did_upgrade = self::maybe_upgrade();
+        $this->api->migrate_stored_api_key();
+        $this->knowledge->migrate_legacy_files();
         $this->define_admin_hooks();
         $this->define_public_hooks();
+        $this->define_maintenance_hooks();
+        if ($did_upgrade) {
+            self::schedule_knowledge_rebuild();
+        }
         // Register Polylang strings after init (when Polylang is fully loaded)
         add_action('init', array($this, 'register_polylang_strings'), 20);
     }
@@ -68,18 +75,6 @@ class GSXR_777_Core {
         $this->stats = new GSXR_777_Stats();
     }
 
-    private function set_locale() {
-        add_action('init', array($this, 'load_plugin_textdomain'));
-    }
-
-    public function load_plugin_textdomain() {
-        load_plugin_textdomain(
-            'gsxr-777',
-            false,
-            dirname(GSXR_777_PLUGIN_BASENAME) . '/languages/'
-        );
-    }
-
     private function define_admin_hooks() {
         if (is_admin()) {
             add_action('admin_menu', array($this->admin, 'add_admin_menu'));
@@ -92,6 +87,7 @@ class GSXR_777_Core {
             add_action('wp_ajax_gsxr_777_save_knowledge_file', array($this->admin, 'handle_ajax_save_knowledge_file'));
             add_action('wp_ajax_gsxr_777_delete_knowledge_file', array($this->admin, 'handle_ajax_delete_knowledge_file'));
             add_action('wp_ajax_gsxr_777_get_knowledge_file', array($this->admin, 'handle_ajax_get_knowledge_file'));
+            add_action('wp_ajax_gsxr_777_rebuild_knowledge_index', array($this->admin, 'handle_ajax_rebuild_knowledge_index'));
         }
     }
 
@@ -99,27 +95,42 @@ class GSXR_777_Core {
         add_action('wp_enqueue_scripts', array($this->widget, 'enqueue_widget_scripts'));
         add_action('rest_api_init', array($this->widget, 'register_rest_routes'));
         add_shortcode('gsxr_777_chat', array($this->widget, 'render_shortcode'));
+        add_action('save_post', array($this->knowledge, 'index_post'), 20, 3);
+        add_action('before_delete_post', array($this->knowledge, 'delete_post_from_index'));
+        add_action('admin_init', array($this, 'add_privacy_policy_content'));
+    }
+
+    private function define_maintenance_hooks() {
+        add_action(self::CLEANUP_HOOK, array($this, 'run_daily_cleanup'));
+        add_action(self::REBUILD_INDEX_HOOK, array($this->knowledge, 'rebuild_index'));
+
+        if (!wp_next_scheduled(self::CLEANUP_HOOK)) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::CLEANUP_HOOK);
+        }
     }
 
     public static function activate() {
         // Check minimum requirements
         if (version_compare(PHP_VERSION, '7.4.0', '<')) {
             deactivate_plugins(GSXR_777_PLUGIN_BASENAME);
-            wp_die(__('GSXR-777 AI Open Chat requires PHP 7.4.0 or higher.', 'gsxr-777'));
+            wp_die(esc_html__('GSXR-777 AI Open Chat requires PHP 7.4.0 or higher.', 'gsxr-777-ai-open-chat'));
         }
 
         global $wp_version;
         if (version_compare($wp_version, '5.0.0', '<')) {
             deactivate_plugins(GSXR_777_PLUGIN_BASENAME);
-            wp_die(__('GSXR-777 AI Open Chat requires WordPress 5.0.0 or higher.', 'gsxr-777'));
+            wp_die(esc_html__('GSXR-777 AI Open Chat requires WordPress 5.0.0 or higher.', 'gsxr-777-ai-open-chat'));
         }
 
         self::maybe_upgrade(true);
+        self::schedule_maintenance();
     }
 
     public static function deactivate() {
         // Clear any transients
         delete_transient('gsxr_777_api_test_result');
+        wp_clear_scheduled_hook(self::CLEANUP_HOOK);
+        wp_clear_scheduled_hook(self::REBUILD_INDEX_HOOK);
     }
 
     public static function uninstall() {
@@ -134,7 +145,7 @@ class GSXR_777_Core {
         $installed_version = get_option(self::VERSION_OPTION, false);
 
         if (!$force && !self::needs_upgrade($installed_version)) {
-            return;
+            return false;
         }
 
         // Keep schema and defaults in sync during silent plugin updates.
@@ -142,6 +153,7 @@ class GSXR_777_Core {
         self::create_knowledge_directory();
         self::set_default_options();
         update_option(self::VERSION_OPTION, GSXR_777_VERSION);
+        return true;
     }
 
     private static function needs_upgrade($installed_version) {
@@ -157,10 +169,13 @@ class GSXR_777_Core {
 
         $charset_collate = $wpdb->get_charset_collate();
 
-        $sessions_table = $wpdb->prefix . 'gsxr777_sessions';
-        $messages_table = $wpdb->prefix . 'gsxr777_messages';
-        $security_table = $wpdb->prefix . 'gsxr777_security_log';
-        $blocked_ips_table = $wpdb->prefix . 'gsxr777_blocked_ips';
+        $sessions_table = esc_sql($wpdb->prefix . 'gsxr777_sessions');
+        $messages_table = esc_sql($wpdb->prefix . 'gsxr777_messages');
+        $security_table = esc_sql($wpdb->prefix . 'gsxr777_security_log');
+        $blocked_ips_table = esc_sql($wpdb->prefix . 'gsxr777_blocked_ips');
+        $rate_limits_table = esc_sql($wpdb->prefix . 'gsxr777_rate_limits');
+        $knowledge_chunks_table = esc_sql($wpdb->prefix . 'gsxr777_knowledge_chunks');
+        $knowledge_documents_table = esc_sql($wpdb->prefix . 'gsxr777_knowledge_documents');
 
         $sql = "CREATE TABLE $sessions_table (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -171,14 +186,15 @@ class GSXR_777_Core {
             last_activity datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             UNIQUE KEY session_id (session_id),
-            KEY idx_created_at (created_at)
+            KEY idx_created_at (created_at),
+            KEY idx_last_activity (last_activity)
         ) $charset_collate;
 
         CREATE TABLE $messages_table (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             session_id varchar(255) NOT NULL,
             role enum('user','assistant') NOT NULL,
-            content text NOT NULL,
+            content longtext NOT NULL,
             tokens_used int DEFAULT 0,
             created_at datetime DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
@@ -207,10 +223,55 @@ class GSXR_777_Core {
             PRIMARY KEY (id),
             KEY idx_ip_address (ip_address),
             KEY idx_expires_at (expires_at)
+        ) $charset_collate;
+
+        CREATE TABLE $rate_limits_table (
+            rate_key char(64) NOT NULL,
+            request_count int unsigned NOT NULL DEFAULT 1,
+            expires_at datetime NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (rate_key),
+            KEY idx_expires_at (expires_at)
+        ) $charset_collate;
+
+        CREATE TABLE $knowledge_chunks_table (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            source_type varchar(20) NOT NULL,
+            source_key char(64) NOT NULL,
+            source_url text DEFAULT NULL,
+            title text NOT NULL,
+            chunk_index int unsigned NOT NULL DEFAULT 0,
+            content longtext NOT NULL,
+            content_hash char(64) NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY source_chunk (source_type, source_key, chunk_index),
+            KEY idx_source_key (source_key),
+            KEY idx_updated_at (updated_at)
+        ) $charset_collate;
+
+        CREATE TABLE $knowledge_documents_table (
+            source_key char(64) NOT NULL,
+            filename varchar(190) NOT NULL,
+            content longtext NOT NULL,
+            content_hash char(64) NOT NULL,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (source_key),
+            UNIQUE KEY filename (filename),
+            KEY idx_updated_at (updated_at)
         ) $charset_collate;";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+
+        // FULLTEXT is optional: retrieval has a portable LIKE-based fallback.
+        $fulltext_index = $wpdb->get_var($wpdb->prepare(
+            "SHOW INDEX FROM {$knowledge_chunks_table} WHERE Key_name = %s",
+            'search_content'
+        ));
+        if (!$fulltext_index) {
+            $wpdb->query("ALTER TABLE {$knowledge_chunks_table} ADD FULLTEXT KEY search_content (title, content)");
+        }
         
         // Check for database errors
         global $wpdb;
@@ -230,19 +291,21 @@ class GSXR_777_Core {
                 return false;
             }
             
-            // Create .htaccess for security
-            $htaccess_content = "Options -Indexes\n<Files *.md>\nOrder allow,deny\nAllow from all\n</Files>";
+            // Deny direct HTTP access on Apache/OpenLiteSpeed.
+            $htaccess_content = "Options -Indexes\n<FilesMatch \"\\.(?:md|txt|json)$\">\nRequire all denied\n</FilesMatch>\n<IfModule !mod_authz_core.c>\n<FilesMatch \"\\.(?:md|txt|json)$\">\nOrder allow,deny\nDeny from all\n</FilesMatch>\n</IfModule>";
             $result = file_put_contents($knowledge_dir . '/.htaccess', $htaccess_content, LOCK_EX);
             if ($result === false) {
                 error_log('GSXR-777: Could not write .htaccess file');
             }
             
-            // Create example knowledge file
-            $example_content = "# Welcome to GSXR-777 AI Chat\n\nThis is an example knowledge base file. You can edit or delete this file and add your own content.";
-            $result = file_put_contents($knowledge_dir . '/welcome.md', $example_content, LOCK_EX);
-            if ($result === false) {
-                error_log('GSXR-777: Could not write welcome.md file');
+            $index_content = "<?php\n// Silence is golden.\n";
+            if (file_put_contents($knowledge_dir . '/index.php', $index_content, LOCK_EX) === false) {
+                error_log('GSXR-777: Could not write index.php file');
             }
+        } else {
+            // Repair protection created by older plugin versions.
+            $htaccess_content = "Options -Indexes\n<FilesMatch \"\\.(?:md|txt|json)$\">\nRequire all denied\n</FilesMatch>\n<IfModule !mod_authz_core.c>\n<FilesMatch \"\\.(?:md|txt|json)$\">\nOrder allow,deny\nDeny from all\n</FilesMatch>\n</IfModule>";
+            file_put_contents($knowledge_dir . '/.htaccess', $htaccess_content, LOCK_EX);
         }
         return true;
     }
@@ -260,9 +323,9 @@ class GSXR_777_Core {
             'gsxr_777_api_presence_penalty' => 0,
             'gsxr_777_api_history_limit' => 20,
             'gsxr_777_api_system_instructions' => '',
-            'gsxr_777_widget_title' => __('Chat', 'gsxr-777'),
-            'gsxr_777_widget_welcome' => __('Hello! How can I help you?', 'gsxr-777'),
-            'gsxr_777_widget_placeholder' => __('Type your message...', 'gsxr-777'),
+            'gsxr_777_widget_title' => __('Chat', 'gsxr-777-ai-open-chat'),
+            'gsxr_777_widget_welcome' => __('Hello! How can I help you?', 'gsxr-777-ai-open-chat'),
+            'gsxr_777_widget_placeholder' => __('Type your message...', 'gsxr-777-ai-open-chat'),
             'gsxr_777_widget_position' => 'bottom-right',
             'gsxr_777_widget_primary_color' => '#2563eb',
             'gsxr_777_widget_secondary_color' => '#1d4ed8',
@@ -280,6 +343,11 @@ class GSXR_777_Core {
             'gsxr_777_widget_height' => 600,
             'gsxr_777_rate_limit_requests' => 10,
             'gsxr_777_rate_limit_window' => 60,
+            'gsxr_777_data_retention_days' => 90,
+            'gsxr_777_security_log_retention_days' => 30,
+            'gsxr_777_store_request_metadata' => false,
+            'gsxr_777_include_page_context' => true,
+            'gsxr_777_widget_theme_mode' => 'auto',
             'gsxr_777_delete_data_on_uninstall' => false
         );
 
@@ -297,10 +365,14 @@ class GSXR_777_Core {
             $wpdb->prefix . 'gsxr777_sessions',
             $wpdb->prefix . 'gsxr777_messages',
             $wpdb->prefix . 'gsxr777_security_log',
-            $wpdb->prefix . 'gsxr777_blocked_ips'
+            $wpdb->prefix . 'gsxr777_blocked_ips',
+            $wpdb->prefix . 'gsxr777_rate_limits',
+            $wpdb->prefix . 'gsxr777_knowledge_chunks',
+            $wpdb->prefix . 'gsxr777_knowledge_documents'
         );
 
         foreach ($tables as $table) {
+            $table = esc_sql($table);
             $wpdb->query("DROP TABLE IF EXISTS $table");
         }
     }
@@ -339,7 +411,13 @@ class GSXR_777_Core {
             'gsxr_777_widget_height',
             'gsxr_777_rate_limit_requests',
             'gsxr_777_rate_limit_window',
+            'gsxr_777_data_retention_days',
+            'gsxr_777_security_log_retention_days',
+            'gsxr_777_store_request_metadata',
+            'gsxr_777_include_page_context',
+            'gsxr_777_widget_theme_mode',
             'gsxr_777_delete_data_on_uninstall',
+            'gsxr_777_legacy_knowledge_migrated',
             self::VERSION_OPTION
         );
 
@@ -353,22 +431,62 @@ class GSXR_777_Core {
         $knowledge_dir = $upload_dir['basedir'] . '/gsxr-777-knowledge';
         
         if (file_exists($knowledge_dir)) {
-            // Only delete .md and .htaccess files, prevent deletion of other files
-            $files = glob($knowledge_dir . '/*.{md,htaccess}', GLOB_BRACE);
+            // Only delete files owned by the plugin.
+            $files = array_merge(
+                glob($knowledge_dir . '/*.md') ?: array(),
+                array($knowledge_dir . '/.htaccess', $knowledge_dir . '/index.php')
+            );
             
             if ($files !== false) {
                 foreach ($files as $file) {
                     // Verify file is in the knowledge directory (prevent path traversal)
                     if (is_file($file) && strpos(realpath($file), realpath($knowledge_dir)) === 0) {
-                        @unlink($file);
+                        wp_delete_file($file);
                     }
                 }
             }
             
-            // Only remove directory if it's empty
-            if (is_dir($knowledge_dir)) {
-                @rmdir($knowledge_dir);
-            }
+            // Leave an empty protected directory in place. Removing files is
+            // sufficient for uninstall and avoids direct filesystem rmdir().
         }
+    }
+
+    private static function schedule_maintenance() {
+        if (!wp_next_scheduled(self::CLEANUP_HOOK)) {
+            wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', self::CLEANUP_HOOK);
+        }
+
+        self::schedule_knowledge_rebuild();
+    }
+
+    private static function schedule_knowledge_rebuild() {
+        if (!wp_next_scheduled(self::REBUILD_INDEX_HOOK)) {
+            wp_schedule_single_event(time() + MINUTE_IN_SECONDS, self::REBUILD_INDEX_HOOK);
+        }
+    }
+
+    public function run_daily_cleanup() {
+        $data_days = max(1, intval(get_option('gsxr_777_data_retention_days', 90)));
+        $security_days = max(1, intval(get_option('gsxr_777_security_log_retention_days', 30)));
+
+        $this->stats->cleanup_old_data($data_days);
+        $this->security->cleanup_old_logs($security_days);
+        $this->security->cleanup_rate_limits();
+    }
+
+    public function add_privacy_policy_content() {
+        if (!function_exists('wp_add_privacy_policy_content')) {
+            return;
+        }
+
+        $content = '<p>' . esc_html__(
+            'The AI chat may store conversation messages and an anonymized request identifier for abuse prevention. Messages and selected page context may be sent to the configured AI provider. Chat data is automatically removed after the configured retention period, and visitors can clear their own conversation from the chat interface.',
+            'gsxr-777-ai-open-chat'
+        ) . '</p>';
+
+        wp_add_privacy_policy_content(
+            __('GSXR-777 AI Open Chat', 'gsxr-777-ai-open-chat'),
+            wp_kses_post($content)
+        );
     }
 }

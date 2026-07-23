@@ -1,0 +1,38 @@
+{
+    "name": "gsxr-777/ai-open-chat",
+    "description": "Secure AI chat widget and mini-RAG for WordPress.",
+    "type": "wordpress-plugin",
+    "license": "MIT",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "phpunit/phpunit": "^9.6",
+        "wp-cli/i18n-command": "^2.7",
+        "wp-coding-standards/wpcs": "^3.1",
+        "yoast/phpunit-polyfills": "^2.0"
+    },
+    "scripts": {
+        "lint": [
+            "@php -l gsxr-777-ai-open-chat.php",
+            "@php -l includes/class-gsxr-777-core.php",
+            "@php -l includes/class-gsxr-777-admin.php",
+            "@php -l includes/class-gsxr-777-api.php",
+            "@php -l includes/class-gsxr-777-knowledge.php",
+            "@php -l includes/class-gsxr-777-security.php",
+            "@php -l includes/class-gsxr-777-stats.php",
+            "@php -l includes/class-gsxr-777-widget.php"
+        ],
+        "phpcs": "phpcs --standard=phpcs.xml.dist",
+        "security-check": "phpcs --standard=WordPress --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput gsxr-777-ai-open-chat.php includes admin/views",
+        "pot": "@php vendor/wp-cli/wp-cli/php/boot-fs.php i18n make-pot . languages/gsxr-777.pot --domain=gsxr-777 --exclude=vendor,tests --package-name=\"GSXR-777 AI Open Chat\"",
+        "test": "phpunit"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    }
+}
