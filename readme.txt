@@ -29,14 +29,14 @@ GSXR-777 AI Open Chat is a powerful and flexible AI chatbot plugin for WordPress
 
 = Supported AI Providers =
 
-* **OpenAI** - GPT-4, GPT-3.5, and other models
-* **Anthropic Claude** - Claude 3 Sonnet, Haiku, and Opus
-* **Google Gemini** - Gemini Pro and other models
-* **GigaChat** - Sber's Russian AI model
-* **YandexGPT** - Yandex's AI models
-* **Ollama** - Local AI models
-* **OpenRouter** - Access to multiple AI providers
-* **Custom APIs** - Any OpenAI-compatible endpoint
+* **OpenAI** - Current GPT and o-series model families; exact model IDs depend on the models enabled for your API account
+* **Anthropic Claude** - Current Claude Opus, Sonnet, and Haiku families; exact model IDs depend on Anthropic API availability
+* **Google Gemini** - Current Gemini 3.x and 2.5 families, including Flash, Flash-Lite, and Pro variants where available
+* **GigaChat** - Current GigaChat models available in the configured Sber API account
+* **YandexGPT** - Current YandexGPT models available in the Foundation Models API
+* **Ollama** - Any model installed in the local Ollama catalog
+* **OpenRouter** - The current catalog of routed models from multiple providers; model IDs change as the catalog evolves
+* **Custom APIs** - Any OpenAI-compatible endpoint and model ID
 
 = Easy Setup =
 
